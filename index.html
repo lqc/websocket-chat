@@ -1,0 +1,65 @@
+<html>
+	<title>Websocket Chat</title>
+	<body>
+		<p>
+		<p>Send a message (Status &mdash; <span id="status">Unconnected</span>)</p>
+		<form id="message_form">
+			<input type="text" name="message" value="">
+			<p><button type="submit">Send</button></p>
+		</form>
+		<pre id="log"></pre>
+<script type="text/javascript">
+function init() {
+	var socket = null;
+	var status_bar = document.getElementById("status");
+	var form = document.getElementById("message_form");
+	var log = document.getElementById("log");
+	var chat_id = null;
+	
+	form.addEventListener("submit", function(evt) {
+		evt.preventDefault();
+		var msg = this.elements.namedItem("message");
+		
+		if(socket === null || socket.readyState != 1) {
+			msg.setCustomValidity("You must be connected to send messages.");
+			return;
+		};
+		
+		socket.send(msg.value);
+		this.reset()
+	});
+	
+	function connect_socket() {
+		log.innerHTML += "Connecting... ";
+		
+		// Make a websocket connection
+		socket = new WebSocket("ws://localhost:8000/room01")
+		
+		socket.addEventListener("open", function() {
+			log.innerHTML += "done!\n";
+			status_bar.innerText = "Connected";			
+		});
+		
+		socket.addEventListener("error", function() {
+			log.innerHTML += "failed.\n";
+			setTimeout(connect_socket, 1000);
+		});
+		
+		socket.addEventListener("close", function() {
+			log.innerHTML += "closed.\n";
+			status_bar.innerText = "Disconnected";
+			setTimeout(connect_socket, 1000);
+		});
+		
+		socket.addEventListener("message", function(evt) {
+			log.innerHTML += evt.data + "\n";
+		});
+	};
+	
+	connect_socket();
+};
+
+init();
+</script>
+	</body>
+</html>
